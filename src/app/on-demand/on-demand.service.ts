@@ -76,7 +76,7 @@ export class OnDemandService {
           kusamaAmountInSmallestUnit,
           this.KUSAMA_PARA_ID
         );
-        await this.sendTransaction(kusamaCall, signer, kusamaNonce, 'Kusama', kusamaAmountInSmallestUnit);
+        await this.sendTransaction(kusamaCall, signer, kusamaNonce, 'Xode Kusama', kusamaAmountInSmallestUnit, kusamaExtrinsics);
       } else {
         this.logger.log('📭 No pending extrinsics found on Kusama.');
       }
@@ -88,7 +88,7 @@ export class OnDemandService {
           polkadotAmountInSmallestUnit,
           this.POLKADOT_PARA_ID
         );
-        await this.sendTransaction(polkadotCall, signer, polkadotNonce, 'Polkadot', polkadotAmountInSmallestUnit);
+        await this.sendTransaction(polkadotCall, signer, polkadotNonce, 'Xode Polkadot', polkadotAmountInSmallestUnit, polkadotExtrinsics);
       } else {
         this.logger.log('📭 No pending extrinsics found on Polkadot.');
       }
@@ -98,7 +98,7 @@ export class OnDemandService {
         paseoAmountInSmallestUnit,
         this.PASEO_PARA_ID
       );
-      await this.sendTransaction(paseoCall, signer, paseoNonce, 'Paseo', paseoAmountInSmallestUnit);
+      await this.sendTransaction(paseoCall, signer, paseoNonce, 'Xode Paseo', paseoAmountInSmallestUnit, kusamaExtrinsics);
   
     } catch (error) {
       this.logger.error('❌ Error checking and placing order:', error);
@@ -107,7 +107,7 @@ export class OnDemandService {
   
   
   // Helper function to send transactions and handle errors gracefully
-  private async sendTransaction(call, signer, nonce, chain: string, amount: number): Promise<void> {
+  private async sendTransaction(call, signer, nonce, chain: string, amount: number, extrinsics: any): Promise<void> {
     try {
       const signedExtrinsic = await call.signAsync(signer, { nonce });
 
@@ -117,11 +117,15 @@ export class OnDemandService {
           if (status.isInBlock) {
             const blockhash = status.asInBlock.toHex();
             this.logger.log(`✅ ${chain} Transaction included in block: ${blockhash}`);
-            await this.storeOrder(blockhash, chain, amount);
+            if (chain !== 'Xode Paseo') {
+              await this.storeOrder(blockhash, chain, amount, extrinsics);
+            }
           } else if (status.isFinalized) {
             const blockhash = status.asFinalized.toHex();
             this.logger.log(`✅ ${chain} Transaction finalized: ${blockhash}`);
-            await this.storeOrder(blockhash, chain, amount);
+            if (chain !== 'Xode Paseo') {
+              await this.storeOrder(blockhash, chain, amount, extrinsics);
+            }
           } else {
             this.logger.log(`⏳ ${chain} Transaction status: ${status}`);
           }
@@ -148,8 +152,9 @@ export class OnDemandService {
   
 
   // Save orders to the database
-  private async storeOrder(blockhash: string, chain: string, amount: number) {
-    const result = `Order placed on ${chain} with amount: ${amount}`; // Example result
+  private async storeOrder(blockhash: string, chain: string, amount: number, extrinsics: any) {
+    if (chain === 'Xode Paseo') return;
+    const result = `${JSON.stringify(extrinsics)}`;
 
     const onDemandOrder = this.onDemandRepository.create({
       blockhash,
