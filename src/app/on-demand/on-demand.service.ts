@@ -108,30 +108,42 @@ export class OnDemandService {
   private async sendTransaction(call, signer, nonce, chain: string, amount: number): Promise<void> {
     try {
       const signedExtrinsic = await call.signAsync(signer, { nonce });
-  
-      signedExtrinsic.send(async ({ status, events }) => {
-        if (status.isInBlock) {
-          const blockhash = status.asInBlock.toHex();
-          this.logger.log(`✅ ${chain} Transaction included in block: ${blockhash}`);
-          await this.storeOrder(blockhash, chain, amount);
-        } else if (status.isFinalized) {
-          const blockhash = status.asFinalized.toHex();
-          this.logger.log(`✅ ${chain} Transaction finalized: ${blockhash}`);
-          await this.storeOrder(blockhash, chain, amount);
+
+      signedExtrinsic
+      .send(async ({ status, events }) => {
+        try {
+          if (status.isInBlock) {
+            const blockhash = status.asInBlock.toHex();
+            this.logger.log(`✅ ${chain} Transaction included in block: ${blockhash}`);
+            await this.storeOrder(blockhash, chain, amount);
+          } else if (status.isFinalized) {
+            const blockhash = status.asFinalized.toHex();
+            this.logger.log(`✅ ${chain} Transaction finalized: ${blockhash}`);
+            await this.storeOrder(blockhash, chain, amount);
+          } else {
+            this.logger.log(`⏳ ${chain} Transaction status: ${status}`);
+          }
+        } catch (callbackError) {
+          this.logger.error(`❌ Error inside ${chain} transaction callback:`, callbackError);
+        }
+      })
+      .catch((err) => {
+        if (err.message && err.message.includes("Inability to pay some fees")) {
+          this.logger.error(`❌ ${chain} RPC-level send() error: Insufficient funds.`);
         } else {
-          this.logger.log(`⏳ ${chain} Transaction status: ${status}`);
+          this.logger.error(`❌ ${chain} RPC-level send() error:`, err);
         }
       });
+
     } catch (error) {
-      // Check for insufficient funds error in the error message or code
       if (error.message && error.message.includes("Inability to pay some fees")) {
         this.logger.error(`❌ ${chain} Transaction failed due to insufficient funds: ${error.message}`);
       } else {
-        // Handle other errors
         this.logger.error(`❌ Error with ${chain} transaction:`, error);
       }
     }
   }
+  
 
   // Save orders to the database
   private async storeOrder(blockhash: string, chain: string, amount: number) {
