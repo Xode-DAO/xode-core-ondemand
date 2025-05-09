@@ -47,14 +47,9 @@ export class OnDemandService {
       const kusamaExtrinsics = await this.extrinsicsService.getPendingXodeKusama();
       const polkadotExtrinsics = await this.extrinsicsService.getPendingXodePolkadot();
   
+      // Logging the extrinsics received from Kusama and Polkadot
       this.logger.log(`📥 KUSAMA: Pending Extrinsics: ${JSON.stringify(kusamaExtrinsics)}`);
       this.logger.log(`📥 POLKADOT: Pending Extrinsics: ${JSON.stringify(polkadotExtrinsics)}`);
-  
-      // If no pending extrinsics found, exit
-      if (kusamaExtrinsics.length === 0 && polkadotExtrinsics.length === 0) {
-        this.logger.log('📭 No pending extrinsics found on Kusama or Polkadot.');
-        return;
-      }
   
       // Convert amounts to smallest units
       const kusamaAmountInSmallestUnit = this.convertToSmallestUnit(this.KUSAMA_AMOUNT, this.KUSAMA_DECIMALS);
@@ -74,35 +69,42 @@ export class OnDemandService {
       const { nonce: polkadotNonce } = await polkadotApi.query.system.account(signer.address) as any;
       const { nonce: paseoNonce } = await paseoApi.query.system.account(signer.address) as any;
   
-      // Create extrinsic calls for Kusama and Polkadot
-      const kusamaCall = kusamaApi.tx.onDemandAssignmentProvider.placeOrderAllowDeath(
-        kusamaAmountInSmallestUnit,
-        this.KUSAMA_PARA_ID
-      );
+      // Check Kusama extrinsics and place order if pending
+      if (kusamaExtrinsics.length > 0) {
+        this.logger.log('📥 Kusama has pending extrinsics. Placing order...');
+        const kusamaCall = kusamaApi.tx.onDemandAssignmentProvider.placeOrderAllowDeath(
+          kusamaAmountInSmallestUnit,
+          this.KUSAMA_PARA_ID
+        );
+        await this.sendTransaction(kusamaCall, signer, kusamaNonce, 'Kusama', kusamaAmountInSmallestUnit);
+      } else {
+        this.logger.log('📭 No pending extrinsics found on Kusama.');
+      }
   
-      const polkadotCall = polkadotApi.tx.onDemand.placeOrderAllowDeath(
-        polkadotAmountInSmallestUnit,
-        this.POLKADOT_PARA_ID
-      );
+      // Check Polkadot extrinsics and place order if pending
+      if (polkadotExtrinsics.length > 0) {
+        this.logger.log('📥 Polkadot has pending extrinsics. Placing order...');
+        const polkadotCall = polkadotApi.tx.onDemand.placeOrderAllowDeath(
+          polkadotAmountInSmallestUnit,
+          this.POLKADOT_PARA_ID
+        );
+        await this.sendTransaction(polkadotCall, signer, polkadotNonce, 'Polkadot', polkadotAmountInSmallestUnit);
+      } else {
+        this.logger.log('📭 No pending extrinsics found on Polkadot.');
+      }
   
+      // Proceed with Paseo transaction (this can remain unconditional as it's separate)
       const paseoCall = paseoApi.tx.onDemand.placeOrderAllowDeath(
         paseoAmountInSmallestUnit,
         this.PASEO_PARA_ID
       );
-  
-      // Sign and send Kusama transaction
-      await this.sendTransaction(kusamaCall, signer, kusamaNonce, 'Kusama', kusamaAmountInSmallestUnit);
-  
-      // Sign and send Polkadot transaction
-      await this.sendTransaction(polkadotCall, signer, polkadotNonce, 'Polkadot', polkadotAmountInSmallestUnit);
-  
-      // Sign and send Paseo transaction
       await this.sendTransaction(paseoCall, signer, paseoNonce, 'Paseo', paseoAmountInSmallestUnit);
   
     } catch (error) {
       this.logger.error('❌ Error checking and placing order:', error);
     }
   }
+  
   
   // Helper function to send transactions and handle errors gracefully
   private async sendTransaction(call, signer, nonce, chain: string, amount: number): Promise<void> {
