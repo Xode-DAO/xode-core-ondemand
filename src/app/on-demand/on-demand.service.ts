@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ApiService } from '../api/api.service';  // Import the ApiService
+import { ApiPromise, Keyring } from '@polkadot/api';
 import { ExtrinsicsService } from '../extrinsics/extrinsics.service'; // Import your ExtrinsicsService
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,129 +12,128 @@ config();
 @Injectable()
 export class OnDemandService {
   private readonly logger = new Logger(OnDemandService.name);
-  private kusamaApi: ApiPromise;
-  private polkadotApi: ApiPromise;
-
-  private readonly KUSAMA_PARA_ID = 3344; 
-  private readonly POLKADOT_PARA_ID = 3417;
   
-  private readonly KUSAMA_AMOUNT = 0.005;  
-  private readonly POLKADOT_AMOUNT = 0.025; 
-
-  private readonly KUSAMA_DECIMALS = 12;    
-  private readonly POLKADOT_DECIMALS = 10;  
-
+  private readonly KUSAMA_PARA_ID = 3344;
+  private readonly POLKADOT_PARA_ID = 3417;
+  private readonly PASEO_PARA_ID = 4607;
+  
+  private readonly KUSAMA_AMOUNT = 0.005;
+  private readonly POLKADOT_AMOUNT = 0.025;
+  private readonly PASEO_AMOUNT = 0.001;
+  
+  private readonly KUSAMA_DECIMALS = 12;
+  private readonly POLKADOT_DECIMALS = 10;
+  private readonly PASEO_DECIMALS = 10;
+  
   constructor(
+    private readonly apiService: ApiService,
     private readonly extrinsicsService: ExtrinsicsService,
     @InjectRepository(OnDemandEntity)
-    private readonly onDemandRepository: Repository<OnDemandEntity> // Inject OnDemandRepository
-  ) {}
-
-  async onModuleInit() {
-    await this.initApis();
+    private readonly onDemandRepository: Repository<OnDemandEntity>
+  ) {
     this.startOrderCycle();
   }
 
-  private async initApis() {
-    // Initialize Kusama API
-    if (!this.kusamaApi) {
-      const kusamaProvider = new WsProvider(process.env.KUSAMA_RPC_ENDPOINT);
-      this.kusamaApi = await ApiPromise.create({ provider: kusamaProvider });
-      await this.kusamaApi.isReady;
-      this.logger.log('✅ Connected to Kusama RPC');
-    }
-
-    // Initialize Polkadot API
-    if (!this.polkadotApi) {
-      const polkadotProvider = new WsProvider(process.env.POLKADOT_RPC_ENDPOINT);
-      this.polkadotApi = await ApiPromise.create({ provider: polkadotProvider });
-      await this.polkadotApi.isReady;
-      this.logger.log('✅ Connected to Polkadot RPC');
-    }
-  }
+  
 
   private convertToSmallestUnit(amount: number, decimals: number): number {
-    return amount * Math.pow(10, decimals); 
+    return amount * Math.pow(10, decimals);
   }
+
 
   async checkAndPlaceOrder(): Promise<void> {
     try {
-      // Fetch pending extrinsics from Kusama and Polkadot using ExtrinsicsService
+      // Fetch pending extrinsics using the ExtrinsicsService
       const kusamaExtrinsics = await this.extrinsicsService.getPendingXodeKusama();
       const polkadotExtrinsics = await this.extrinsicsService.getPendingXodePolkadot();
-
-
-    this.logger.log(`📥 KUSAMA: Pending Extrinsics: ${JSON.stringify(kusamaExtrinsics)}`);
-    this.logger.log(`📥 POLKADOT: Pending Extrinsics: ${JSON.stringify(polkadotExtrinsics)}`);
-
-      // If no pending extrinsics found for Kusama and Polkadot, exit the method
+  
+      this.logger.log(`📥 KUSAMA: Pending Extrinsics: ${JSON.stringify(kusamaExtrinsics)}`);
+      this.logger.log(`📥 POLKADOT: Pending Extrinsics: ${JSON.stringify(polkadotExtrinsics)}`);
+  
+      // If no pending extrinsics found, exit
       if (kusamaExtrinsics.length === 0 && polkadotExtrinsics.length === 0) {
         this.logger.log('📭 No pending extrinsics found on Kusama or Polkadot.');
         return;
       }
-
-      // Convert amounts to smallest units for Kusama and Polkadot
+  
+      // Convert amounts to smallest units
       const kusamaAmountInSmallestUnit = this.convertToSmallestUnit(this.KUSAMA_AMOUNT, this.KUSAMA_DECIMALS);
       const polkadotAmountInSmallestUnit = this.convertToSmallestUnit(this.POLKADOT_AMOUNT, this.POLKADOT_DECIMALS);
-
-      // Prepare signer using mnemonic (private key)
+      const paseoAmountInSmallestUnit = this.convertToSmallestUnit(this.PASEO_AMOUNT, this.PASEO_DECIMALS);
+  
+      // Prepare signer using mnemonic
       const keyring = new Keyring({ type: 'sr25519' });
-      const signer = keyring.addFromUri(process.env.MNEMONIC!); // Use ! to assert it's not undefined
-
-      // Get the nonce for both Kusama and Polkadot
-      const { nonce: kusamaNonce } = await this.kusamaApi.query.system.account(signer.address) as any;
-      const { nonce: polkadotNonce } = await this.polkadotApi.query.system.account(signer.address) as any;
-
-
+      const signer = keyring.addFromUri(process.env.MNEMONIC!);
+  
+      // Get the nonce for Kusama and Polkadot
+      const kusamaApi = await this.apiService.getKusamaApi();
+      const polkadotApi = await this.apiService.getPolkadotApi();
+      const paseoApi = await this.apiService.getPaseoApi();
+  
+      const { nonce: kusamaNonce } = await kusamaApi.query.system.account(signer.address) as any;
+      const { nonce: polkadotNonce } = await polkadotApi.query.system.account(signer.address) as any;
+      const { nonce: paseoNonce } = await paseoApi.query.system.account(signer.address) as any;
+  
       // Create extrinsic calls for Kusama and Polkadot
-      const kusamaCall = this.kusamaApi.tx.onDemandAssignmentProvider.placeOrderAllowDeath(
+      const kusamaCall = kusamaApi.tx.onDemandAssignmentProvider.placeOrderAllowDeath(
         kusamaAmountInSmallestUnit,
         this.KUSAMA_PARA_ID
       );
-
-      const polkadotCall = this.polkadotApi.tx.onDemandAssignmentProvider.placeOrderAllowDeath(
+  
+      const polkadotCall = polkadotApi.tx.onDemand.placeOrderAllowDeath(
         polkadotAmountInSmallestUnit,
         this.POLKADOT_PARA_ID
       );
-
+  
+      const paseoCall = paseoApi.tx.onDemand.placeOrderAllowDeath(
+        paseoAmountInSmallestUnit,
+        this.PASEO_PARA_ID
+      );
+  
       // Sign and send Kusama transaction
-      const signedKusamaExtrinsic = await kusamaCall.signAsync(signer, { nonce: kusamaNonce });
-      signedKusamaExtrinsic.send(async ({ status }) => {
-        if (status.isInBlock) {
-          const blockhash = status.asInBlock.toHex();
-          this.logger.log(`✅ Kusama Transaction included in block: ${blockhash}`);
-          await this.storeOrder(blockhash, 'Kusama', kusamaAmountInSmallestUnit);
-        } else if (status.isFinalized) {
-          const blockhash = status.asFinalized.toHex();
-          this.logger.log(`✅ Kusama Transaction finalized: ${blockhash}`);
-          await this.storeOrder(blockhash, 'Kusama', kusamaAmountInSmallestUnit);
-        } else {
-          this.logger.log(`⏳ Kusama Transaction status: ${status}`);
-        }
-      });
-
+      await this.sendTransaction(kusamaCall, signer, kusamaNonce, 'Kusama', kusamaAmountInSmallestUnit);
+  
       // Sign and send Polkadot transaction
-      const signedPolkadotExtrinsic = await polkadotCall.signAsync(signer, { nonce: polkadotNonce });
-      signedPolkadotExtrinsic.send(async ({ status }) => {
-        if (status.isInBlock) {
-          const blockhash = status.asInBlock.toHex();
-          this.logger.log(`✅ Polkadot Transaction included in block: ${blockhash}`);
-          await this.storeOrder(blockhash, 'Polkadot', polkadotAmountInSmallestUnit);
-        } else if (status.isFinalized) {
-          const blockhash = status.asFinalized.toHex();
-          this.logger.log(`✅ Polkadot Transaction finalized: ${blockhash}`);
-          await this.storeOrder(blockhash, 'Polkadot', polkadotAmountInSmallestUnit);
-        } else {
-          this.logger.log(`⏳ Polkadot Transaction status: ${status}`);
-        }
-      });
-
+      await this.sendTransaction(polkadotCall, signer, polkadotNonce, 'Polkadot', polkadotAmountInSmallestUnit);
+  
+      // Sign and send Paseo transaction
+      await this.sendTransaction(paseoCall, signer, paseoNonce, 'Paseo', paseoAmountInSmallestUnit);
+  
     } catch (error) {
       this.logger.error('❌ Error checking and placing order:', error);
     }
   }
+  
+  // Helper function to send transactions and handle errors gracefully
+  private async sendTransaction(call, signer, nonce, chain: string, amount: number): Promise<void> {
+    try {
+      const signedExtrinsic = await call.signAsync(signer, { nonce });
+  
+      signedExtrinsic.send(async ({ status, events }) => {
+        if (status.isInBlock) {
+          const blockhash = status.asInBlock.toHex();
+          this.logger.log(`✅ ${chain} Transaction included in block: ${blockhash}`);
+          await this.storeOrder(blockhash, chain, amount);
+        } else if (status.isFinalized) {
+          const blockhash = status.asFinalized.toHex();
+          this.logger.log(`✅ ${chain} Transaction finalized: ${blockhash}`);
+          await this.storeOrder(blockhash, chain, amount);
+        } else {
+          this.logger.log(`⏳ ${chain} Transaction status: ${status}`);
+        }
+      });
+    } catch (error) {
+      // Check for insufficient funds error in the error message or code
+      if (error.message && error.message.includes("Inability to pay some fees")) {
+        this.logger.error(`❌ ${chain} Transaction failed due to insufficient funds: ${error.message}`);
+      } else {
+        // Handle other errors
+        this.logger.error(`❌ Error with ${chain} transaction:`, error);
+      }
+    }
+  }
 
-  // Save orders to database (now with blockhash, result, timestamp, and chain)
+  // Save orders to the database
   private async storeOrder(blockhash: string, chain: string, amount: number) {
     const result = `Order placed on ${chain} with amount: ${amount}`; // Example result
 
@@ -148,6 +148,7 @@ export class OnDemandService {
     this.logger.log(`✅ OnDemand order saved with chain: ${chain}, blockhash: ${blockhash}`);
   }
 
+  // Start the order cycle (every 12 seconds)
   private startOrderCycle(): void {
     setInterval(async () => {
       try {

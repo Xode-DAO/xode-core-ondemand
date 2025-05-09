@@ -6,6 +6,8 @@ import { ExtrinsicsModule } from './app/extrinsics/extrinsics.module';
 import { OnDemandModule } from './app/on-demand/on-demand.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OnDemandEntity } from './app/on-demand/onDemand.entity';
+import { ApiService } from './app/api/api.service';
+import { ApiModule } from './app/api/api.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { OnDemandEntity } from './app/on-demand/onDemand.entity';
     TypeOrmModule.forFeature([OnDemandEntity]),
     ExtrinsicsModule,
     OnDemandModule,
+    ApiModule,
   ],
   controllers: [],
   providers: [AppService],
