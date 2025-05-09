@@ -12,6 +12,7 @@ config();
 @Injectable()
 export class OnDemandService {
   private readonly logger = new Logger(OnDemandService.name);
+  private isProcessing = false;
   
   private readonly KUSAMA_PARA_ID = 3344;
   private readonly POLKADOT_PARA_ID = 3417;
@@ -42,6 +43,12 @@ export class OnDemandService {
 
 
   async checkAndPlaceOrder(): Promise<void> {
+    if (this.isProcessing) {
+      this.logger.warn('⚠️ Still processing previous orders. Skipping this cycle.');
+      return;
+    }
+
+    this.isProcessing = true;
     try {
       // Fetch pending extrinsics using the ExtrinsicsService
       const kusamaExtrinsics = await this.extrinsicsService.getPendingXodeKusama();
@@ -103,6 +110,9 @@ export class OnDemandService {
     } catch (error) {
       this.logger.error('❌ Error checking and placing order:', error);
     }
+    finally {
+      this.isProcessing = false;
+    }
   }
   
   
@@ -111,38 +121,21 @@ export class OnDemandService {
     try {
       const signedExtrinsic = await call.signAsync(signer, { nonce });
 
-      signedExtrinsic
-      .send(async ({ status, events }) => {
+      await signedExtrinsic.send(async ({ status }) => {
         try {
-          if (status.isInBlock) {
-            const blockhash = status.asInBlock.toHex();
-            this.logger.log(`✅ ${chain} Transaction included in block: ${blockhash}`);
-            if (chain !== 'Xode Paseo') {
-              await this.storeOrder(blockhash, chain, amount, extrinsics);
-            }
-          } else if (status.isFinalized) {
+          if (status.isFinalized) {
             const blockhash = status.asFinalized.toHex();
             this.logger.log(`✅ ${chain} Transaction finalized: ${blockhash}`);
             if (chain !== 'Xode Paseo') {
               await this.storeOrder(blockhash, chain, amount, extrinsics);
             }
-          } else {
-            this.logger.log(`⏳ ${chain} Transaction status: ${status}`);
           }
         } catch (callbackError) {
           this.logger.error(`❌ Error inside ${chain} transaction callback:`, callbackError);
         }
-      })
-      .catch((err) => {
-        if (err.message && err.message.includes("Inability to pay some fees")) {
-          this.logger.error(`❌ ${chain} RPC-level send() error: Insufficient funds.`);
-        } else {
-          this.logger.error(`❌ ${chain} RPC-level send() error:`, err);
-        }
       });
-
     } catch (error) {
-      if (error.message && error.message.includes("Inability to pay some fees")) {
+      if (error.message?.includes('Inability to pay some fees')) {
         this.logger.error(`❌ ${chain} Transaction failed due to insufficient funds: ${error.message}`);
       } else {
         this.logger.error(`❌ Error with ${chain} transaction:`, error);
@@ -169,13 +162,16 @@ export class OnDemandService {
 
   // Start the order cycle (every 12 seconds)
   private startOrderCycle(): void {
-    setInterval(async () => {
+    const runCycle = async () => {
       try {
-        this.logger.log('⏳ Checking and placing order on Kusama/Polkadot...');
         await this.checkAndPlaceOrder();
       } catch (error) {
         this.logger.error('❌ Error placing order:', error);
+      } finally {
+        setTimeout(runCycle, 12000); // Wait 12 seconds after completion
       }
-    }, 12000); // Every 12 seconds
+    };
+  
+    runCycle(); // Start the first cycle
   }
 }
