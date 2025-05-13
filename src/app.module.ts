@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { OnDemandEntity } from './app/on-demand/onDemand.entity';
 import { ApiService } from './app/api/api.service';
 import { ApiModule } from './app/api/api.module';
+import { ExtrinsicsEntity } from './app/extrinsics/extrinsics.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ApiModule } from './app/api/api.module';
       username: process.env.DB_USERNAME || 'root',
       password: process.env.DB_PASSWORD || 'Xode@2024',
       database: process.env.DB_NAME || 'onDemand',
-      entities: [OnDemandEntity],
+      entities: [OnDemandEntity, ExtrinsicsEntity],
       synchronize: true, // WARNING: disable in production!
     }),
     TypeOrmModule.forFeature([OnDemandEntity]),

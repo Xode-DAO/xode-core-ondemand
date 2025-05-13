@@ -62,6 +62,25 @@ export class OnDemandService {
         // call the ifExtrinsicsExist from extrinsics service
       // otherwise save extrinsics result to the database
         // call the save extrinsic from extrinsics service
+
+        // 🔍 Check if extrinsics already exist
+        const kusamaExists = kusamaExtrinsics.length > 0 && await this.extrinsicsService.ifExtrinsicsExist(kusamaExtrinsics);
+        const polkadotExists = polkadotExtrinsics.length > 0 && await this.extrinsicsService.ifExtrinsicsExist(polkadotExtrinsics);
+        
+        // If either already exists, terminate the cycle early
+        if (kusamaExists || polkadotExists) {
+          this.logger.warn('⛔ Extrinsics already exist in DB. Skipping this cycle.');
+          return;
+        }
+        
+        // 💾 Save new extrinsics to the database only if they are not empty
+        if (kusamaExtrinsics.length > 0) {
+          await this.extrinsicsService.saveExtrinsics(kusamaExtrinsics);
+        }
+        if (polkadotExtrinsics.length > 0) {
+          await this.extrinsicsService.saveExtrinsics(polkadotExtrinsics);
+        }
+        
   
       // Convert amounts to smallest units
       const kusamaAmountInSmallestUnit = this.convertToSmallestUnit(this.KUSAMA_AMOUNT, this.KUSAMA_DECIMALS);
