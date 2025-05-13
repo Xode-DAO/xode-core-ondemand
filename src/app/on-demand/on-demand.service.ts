@@ -57,6 +57,11 @@ export class OnDemandService {
       // Logging the extrinsics received from Kusama and Polkadot
       this.logger.log(`📥 KUSAMA: Pending Extrinsics: ${JSON.stringify(kusamaExtrinsics)}`);
       this.logger.log(`📥 POLKADOT: Pending Extrinsics: ${JSON.stringify(polkadotExtrinsics)}`);
+      // query from extrinsics table 
+      // if exist terminate the process
+        // call the ifExtrinsicsExist from extrinsics service
+      // otherwise save extrinsics result to the database
+        // call the save extrinsic from extrinsics service
   
       // Convert amounts to smallest units
       const kusamaAmountInSmallestUnit = this.convertToSmallestUnit(this.KUSAMA_AMOUNT, this.KUSAMA_DECIMALS);

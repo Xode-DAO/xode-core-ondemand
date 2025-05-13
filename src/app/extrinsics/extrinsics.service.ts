@@ -17,4 +17,13 @@ export class ExtrinsicsService {
     const extrinsics = await api.rpc.author.pendingExtrinsics();
     return extrinsics.map(ext => ext.toHuman());
   }
+
+  // async saveExtrinsic(): Promise<any[]> {
+    
+  // }
+
+  async ifExtrinsicsExist(): Promise<Boolean> {
+    // query extrinsics from database
+    return false;
+  }
 }
