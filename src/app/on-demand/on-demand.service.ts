@@ -187,7 +187,7 @@ export class OnDemandService {
       } catch (error) {
         this.logger.error('❌ Error placing order:', error);
       } finally {
-        setTimeout(runCycle, 12000); // Wait 12 seconds after completion
+        setTimeout(runCycle, 6000); // Wait 12 seconds after completion
       }
     };
   
