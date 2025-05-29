@@ -51,7 +51,7 @@ export class ApiService {
         const providerPolkadot = new WsProvider(process.env.PASEO_RPC_ENDPOINT);
         this.paseoApi = await ApiPromise.create({ provider: providerPolkadot });
         await this.paseoApi.isReady;
-        console.log('✅ Connected to Polkadot RPC');
+        console.log('✅ Connected to Paseo RPC');
       }
 
     } catch (error) {
