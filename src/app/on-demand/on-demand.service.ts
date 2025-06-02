@@ -138,9 +138,9 @@ export class OnDemandService {
   // Helper function to send transactions and handle errors gracefully
   private async sendTransaction(call, signer, nonce, chain: string, amount: number, extrinsics: any): Promise<void> {
     try {
-      const signedExtrinsic = await call.signAsync(signer, { nonce });
+      // const signedExtrinsic = await call.signAsync(signer, { nonce });
 
-      await signedExtrinsic.send(async ({ status }) => {
+      await call.signAndSend(signer, { nonce }, async ({ status }) => {
         try {
           if (status.isFinalized) {
             const blockhash = status.asFinalized.toHex();

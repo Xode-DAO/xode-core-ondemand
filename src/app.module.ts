@@ -14,13 +14,13 @@ import { ExtrinsicsEntity } from './app/extrinsics/extrinsics.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST || '1.248.227.169',
+      host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT || '3306', 10),
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || 'Xode@2024',
-      database: process.env.DB_NAME || 'onDemand',
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD ,
+      database: process.env.DB_NAME,
       entities: [OnDemandEntity, ExtrinsicsEntity],
-      synchronize: true, // WARNING: disable in production!
+      synchronize: false, // WARNING: disable in production!
     }),
     TypeOrmModule.forFeature([OnDemandEntity]),
     ExtrinsicsModule,
