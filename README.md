@@ -59,3 +59,10 @@ POLKADOT_RPC_ENDPOINT="https://rpc.polkadot.io"
 XODE_PASEO_RPC_ENDPOINT="https://rpc.xode-paseo.network"
 XODE_KUSAMA_RPC_ENDPOINT="https://rpc.xode-kusama.network"
 XODE_POLKADOT_RPC_ENDPOINT="https://rpc.xode-polkadot.network"
+
+# DATABASE
+DB_HOST="Host"
+DB_PORT="Port or 3306"
+DB_USERNAME="Username"
+DB_PASSWORD="Password"
+DB_NAME="Darabase Name"
