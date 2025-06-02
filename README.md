@@ -5,9 +5,6 @@
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
-<p align="center">This API aims to execute an on-demand action on the relay chain if the extrinsic is found in its parachain.</p>
-<p align="center">
-
 ## Description
 
 This API monitors pending extrinsics in the Xode parachain, which operates under the Polkadot relay chain. When a pending extrinsic is detected, the API triggers an on-demand operation to help finalize the extrinsic and ensure block production within the Xode parachain. This mechanism is designed to support reliable execution and timely block inclusion of critical transactions.
