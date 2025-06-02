@@ -10,7 +10,9 @@
 This API monitors pending extrinsics in the Xode parachain, which operates under the Polkadot relay chain. When a pending extrinsic is detected, the API triggers an on-demand operation to help finalize the extrinsic and ensure block production within the Xode parachain. This mechanism is designed to support reliable execution and timely block inclusion of critical transactions.
 
 ## Project setup
-Fork and Clone repository
+1. Fork and Clone repository
+
+2. Install dependencies
 ```bash
 $ npm install
 ```
