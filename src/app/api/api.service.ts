@@ -15,37 +15,37 @@ export class ApiService {
 
   private async initApi() {
     try {
-      // Initialize Xode Kusama API
-      if (!this.xodeKusamaApi) {
-        const providerXodeKusama = new WsProvider(process.env.XODE_KUSAMA_RPC_ENDPOINT);
-        this.xodeKusamaApi = await ApiPromise.create({ provider: providerXodeKusama });
-        await this.xodeKusamaApi.isReady;
-        console.log('✅ Connected to Xode Kusama RPC');
-      }
+      // // Initialize Xode Kusama API
+      // if (!this.xodeKusamaApi) {
+      //   const providerXodeKusama = new WsProvider(process.env.XODE_KUSAMA_RPC_ENDPOINT);
+      //   this.xodeKusamaApi = await ApiPromise.create({ provider: providerXodeKusama });
+      //   await this.xodeKusamaApi.isReady;
+      //   console.log('✅ Connected to Xode Kusama RPC');
+      // }
 
-      // Initialize Xode Polkadot API
-      if (!this.xodePolkadotApi) {
-        const providerXodePolkadot = new WsProvider(process.env.XODE_POLKADOT_RPC_ENDPOINT);
-        this.xodePolkadotApi = await ApiPromise.create({ provider: providerXodePolkadot });
-        await this.xodePolkadotApi.isReady;
-        console.log('✅ Connected to Xode Polkadot RPC');
-      }
+      // // Initialize Xode Polkadot API
+      // if (!this.xodePolkadotApi) {
+      //   const providerXodePolkadot = new WsProvider(process.env.XODE_POLKADOT_RPC_ENDPOINT);
+      //   this.xodePolkadotApi = await ApiPromise.create({ provider: providerXodePolkadot });
+      //   await this.xodePolkadotApi.isReady;
+      //   console.log('✅ Connected to Xode Polkadot RPC');
+      // }
 
-      // Initialize Kusama API
-      if (!this.kusamaApi) {
-        const providerKusama = new WsProvider(process.env.KUSAMA_RPC_ENDPOINT);
-        this.kusamaApi = await ApiPromise.create({ provider: providerKusama });
-        await this.kusamaApi.isReady;
-        console.log('✅ Connected to Kusama RPC');
-      }
+      // // Initialize Kusama API
+      // if (!this.kusamaApi) {
+      //   const providerKusama = new WsProvider(process.env.KUSAMA_RPC_ENDPOINT);
+      //   this.kusamaApi = await ApiPromise.create({ provider: providerKusama });
+      //   await this.kusamaApi.isReady;
+      //   console.log('✅ Connected to Kusama RPC');
+      // }
 
-      // Initialize Polkadot API
-      if (!this.polkadotApi) {
-        const providerPolkadot = new WsProvider(process.env.POLKADOT_RPC_ENDPOINT);
-        this.polkadotApi = await ApiPromise.create({ provider: providerPolkadot });
-        await this.polkadotApi.isReady;
-        console.log('✅ Connected to Polkadot RPC');
-      }
+      // // Initialize Polkadot API
+      // if (!this.polkadotApi) {
+      //   const providerPolkadot = new WsProvider(process.env.POLKADOT_RPC_ENDPOINT);
+      //   this.polkadotApi = await ApiPromise.create({ provider: providerPolkadot });
+      //   await this.polkadotApi.isReady;
+      //   console.log('✅ Connected to Polkadot RPC');
+      // }
 
       if (!this.paseoApi) {
         const providerPolkadot = new WsProvider(process.env.PASEO_RPC_ENDPOINT);
