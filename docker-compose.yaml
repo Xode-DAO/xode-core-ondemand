@@ -1,10 +1,10 @@
 services:
   app:
-    image: xoderockson/xode-ondemand-api:latest
-    container_name: xode-ondemand-api
+    image: xoderockson/xode-core-ondemand:latest
+    container_name: xode-core-ondemand
     env_file:
       - .env
     ports:
-      - 3001:3000
+      - 3045:3000
     volumes:
-      - /var/www/deployment/xode-ondemand-api/.env:/usr/src/app/.env
+      - /var/www/xode/xode-core-ondemand/.env:/usr/src/app/.env
