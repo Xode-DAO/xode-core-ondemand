@@ -17,7 +17,7 @@ export class OnDemandService {
   // Update these with your actual para IDs
   private readonly PASEO_PARA_ID = 5109; // Make sure this is correct!
   
-  private readonly PASEO_AMOUNT = 0.01;
+  private readonly PASEO_AMOUNT = 1;
   private readonly PASEO_DECIMALS = 10;
   
   constructor(
